@@ -15,7 +15,7 @@ namespace Mercadeo
             Conexion.Open();
             AddMenuItems();
 
-            Validaciones vl = new Validaciones();
+            Mercadeo vl = new Mercadeo();
         }
         /// <summary>Añade los elementos del menú "Mercadeo" y su opción.</summary>
         public static void AddMenuItems()
