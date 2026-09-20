@@ -25,6 +25,11 @@ namespace Mercadeo
         {
             BubbleEvent = true;
 
+            if (FormUID == "mtx_import" && pVal.EventType == SAPbouiCOM.BoEventTypes.et_CLICK && pVal.ItemUID == "btn_xls" && pVal.Action_Success)
+            {
+                Conexion.SBOApplication.MessageBox("Exportando a Excel...");
+            }
+
         }
 
 
