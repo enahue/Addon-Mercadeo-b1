@@ -1,9 +1,14 @@
-﻿using System;
+﻿using SAPbouiCOM;
+using System;
 using System.Collections.Generic;
+using System.Data.OleDb;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using SAPbouiCOM;
+using UI_API_Csharp;
+using System.IO;
+using ExcelDataReader;
 
 namespace Mercadeo
 {
@@ -11,6 +16,7 @@ namespace Mercadeo
     class Mercadeo
     {
         private Form oForms;
+        public System.Data.DataTable Texportar = new System.Data.DataTable();
         public Mercadeo()
         {
             Conexion.Open();
@@ -21,17 +27,102 @@ namespace Mercadeo
 
         }
 
-        public void SBOApplication_ItemEvent(string FormUID, ref SAPbouiCOM.ItemEvent pVal, out bool BubbleEvent)
+        public void SBOApplication_ItemEvent(string FormUID, ref ItemEvent pVal, out bool BubbleEvent)
         {
             BubbleEvent = true;
 
-            if (FormUID == "mtx_import" && pVal.EventType == SAPbouiCOM.BoEventTypes.et_CLICK && pVal.ItemUID == "btn_xls" && pVal.Action_Success)
+            if (FormUID == "Mercadeo" && pVal.EventType == SAPbouiCOM.BoEventTypes.et_CLICK && pVal.ItemUID == "btn_xls" && pVal.ActionSuccess)
             {
-                Conexion.SBOApplication.MessageBox("Exportando a Excel...");
+
+                using (GetFileNameClass oGetFileName = new GetFileNameClass())
+                {
+
+                    oGetFileName.Filter = "Excel files (*.xlsx)|*.xlsx";
+                    oGetFileName.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                    Thread threadGetExcelFile = new Thread(new ThreadStart(oGetFileName.GetFileName));
+                    threadGetExcelFile.SetApartmentState(ApartmentState.STA);
+                    Texportar.Clear();
+                    Texportar.Columns.Clear();
+                    Texportar.Rows.Clear();
+
+                    try
+                    {
+
+                        threadGetExcelFile.Start();
+                        while (!threadGetExcelFile.IsAlive) ;
+                        Thread.Sleep(1);
+                        threadGetExcelFile.Join();
+
+                        var fileName = string.Empty;
+                        fileName = oGetFileName.FileName;
+
+                        if (!string.IsNullOrEmpty(fileName))
+                        {
+                            string archivo = fileName;
+                            string hoja = "Hoja1"; 
+
+                            using (var stream = File.Open(archivo, FileMode.Open, FileAccess.Read))
+                            {
+                                using (var reader = ExcelReaderFactory.CreateReader(stream))
+                                {
+
+                                    var result = reader.AsDataSet(new ExcelDataSetConfiguration()
+                                    {
+                                        ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                                        {
+                                            UseHeaderRow = true
+                                        }
+                                    });
+
+                                    if (result.Tables.Contains(hoja))
+                                    {
+                                        Texportar = result.Tables[hoja].Copy();
+                                    }
+                                    else if (result.Tables.Count > 0)
+                                    {
+                                        Texportar = result.Tables[0].Copy();
+                                    }
+                                }
+                            }
+
+                            //Conexion.SBOApplication.MessageBox(Texportar.Rows.Count.ToString());
+
+                            DataTable oDataTable = null;
+                            if(oForms.DataSources.DataTables.Count.Equals(0))
+                            {
+                                oForms.DataSources.DataTables.Add("DT_Import");
+                            }
+                            else
+                            {
+                               oForms.DataSources.DataTables.Item("DT_Import").Clear();
+                            }
+                            oDataTable = oForms.DataSources.DataTables.Item("DT_Import");
+
+                            oDataTable.Columns.Add("ItemCode", BoFieldsType.ft_AlphaNumeric, 50);
+                            oDataTable.Columns.Add("ItemPrice", BoFieldsType.ft_Price, 50);
+                            oDataTable.Columns.Add("FromDate", BoFieldsType.ft_Date, 50);
+                            oDataTable.Columns.Add("ToDate", BoFieldsType.ft_Date, 50);
+
+                            oDataTable.Rows.Add(Texportar.Rows.Count);
+
+                            for (int i = 1; i <= Texportar.Rows.Count; i++)
+                            {
+                                oDataTable.SetValue("ItemCode", i, Texportar.Rows[i][0].ToString());
+                                oDataTable.SetValue("ItemPrice", i, Texportar.Rows[i][1].ToString());
+                                oDataTable.SetValue("FromDate", i, Texportar.Rows[i][2].ToString());
+                                oDataTable.SetValue("ToDate", i, Texportar.Rows[i][3].ToString());
+                            }
+
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Conexion.SBOApplication.MessageBox("Error: " + ex.Message);
+                    }
+
+                }
             }
-
         }
-
 
         public void SBOApplication_FormDataEvent(ref SAPbouiCOM.BusinessObjectInfo BusinessObjectInfo, out bool BubbleEvent)
         {
