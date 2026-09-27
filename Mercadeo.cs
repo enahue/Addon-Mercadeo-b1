@@ -182,7 +182,14 @@ namespace Mercadeo
                     SAPbouiCOM.Item ChkQuitar = oForms.Items.Item("rdb_del");
                     SAPbouiCOM.CheckBox cmbQuitar = (SAPbouiCOM.CheckBox)ChkQuitar.Specific;
 
+                    SAPbouiCOM.Item ChkPrice = oForms.Items.Item("rdb_lp");
+                    SAPbouiCOM.CheckBox cmbPrice = (SAPbouiCOM.CheckBox)ChkPrice.Specific;
+
                     SAPbobsCOM.Items Articulos = null;
+
+                    int success = -1;
+
+                    Conexion.oCompany.StartTransaction();
 
                     if (btnCrear.Caption == "Crear")
                     {
@@ -214,9 +221,107 @@ namespace Mercadeo
                                 {
                                     Conexion.SBOApplication.SetStatusBarMessage("Artículo actualizado correctamente: " + Texportar.Rows[i]["ItemCode"]?.ToString() ?? "", BoMessageTime.bmt_Short, false);
 
+                                    success = 0;
+                                }
+                            }
+                        }
+
+
+                        //Quitar *BW
+                        if (cmbQuitar.Checked)
+                        {
+                            for (int i = 0; i < Texportar.Rows.Count; i++)
+                            {
+                                Articulos = Conexion.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oItems);
+
+                                string sql = "SELECT \"ItemName\" FROM OITM Where \"ItemCode\" = '" + Texportar.Rows[i][0]?.ToString() + "'";
+
+                                SAPbobsCOM.Recordset oRecordSet = Conexion.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
+                                oRecordSet.DoQuery(sql);
+
+                                string itemName = oRecordSet.Fields.Item("ItemName").Value.ToString();
+                                Articulos.GetByKey(Texportar.Rows[i]["ItemCode"]?.ToString() ?? "");
+
+                                int value = itemName.IndexOf("*BW");
+
+                                if (value != -1)
+                                {
+                                    itemName = itemName.Substring(0, value);
+                                }
+
+                                //itemName = itemName + "*BW";
+                                Articulos.ItemName = itemName;
+
+                                if (Articulos.Update() != 0)
+                                {
+                                    Conexion.SBOApplication.SetStatusBarMessage("Error al actualizar el artículo: " + Conexion.oCompany.GetLastErrorDescription(), BoMessageTime.bmt_Short, true);
+                                    Conexion.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                                    return;
+                                }
+                                else
+                                {
+                                    Conexion.SBOApplication.SetStatusBarMessage("Artículo actualizado correctamente: " + Texportar.Rows[i]["ItemCode"]?.ToString() ?? "", BoMessageTime.bmt_Short, false);
+                                    success = 0;
 
                                 }
                             }
+                        }
+
+                        //Actualizar precios(Descuentos)
+                        if (cmbPrice.Checked)
+                        {
+                            SAPbouiCOM.ComboBox cbx = oForms.Items.Item("lst_price").Specific;
+
+                            string descripcion = "";
+                            string value = "";
+
+                            if (cbx.Selected != null)
+                            {
+                                descripcion = cbx.Selected.Description;
+                                value = cbx.Selected.Value;
+                            }
+
+                            for (int i = 0; i <= Texportar.Rows.Count - 1; i++)
+                            {
+                                SAPbobsCOM.SpecialPrices OSP = Conexion.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oSpecialPrices);
+                                string fechai = Texportar.Rows[i]["Valido De"].ToString();
+                                string fechaf = Texportar.Rows[i]["Valido A"].ToString();
+                                OSP.ItemCode = Texportar.Rows[i]["ItemCode"].ToString();
+
+                                OSP.PriceListNum = Convert.ToInt16(value.ToString());
+                                OSP.SpecialPricesDataAreas.SetCurrentLine(0);
+                                OSP.SpecialPricesDataAreas.DateFrom = Convert.ToDateTime(fechai);
+                                OSP.SpecialPricesDataAreas.Dateto = Convert.ToDateTime(fechaf);
+                                OSP.SpecialPricesDataAreas.PriceListNo = OSP.PriceListNum;
+                                OSP.SpecialPricesDataAreas.PriceCurrency = "CLP";
+                                OSP.SpecialPricesDataAreas.SpecialPrice = Convert.ToDouble(Texportar.Rows[i]["PriceDescuento"].ToString());
+
+                                if (OSP.Add() != 0)
+                                {
+                                    Conexion.SBOApplication.SetStatusBarMessage("Error al agregar el precio especial: " + Conexion.oCompany.GetLastErrorDescription(), BoMessageTime.bmt_Short, true);
+                                    Conexion.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                                    return;
+                                }
+                                else
+                                {
+                                    Conexion.SBOApplication.SetStatusBarMessage("Precio especial agregado correctamente para el artículo: " + Texportar.Rows[i]["ItemCode"]?.ToString() ?? "", BoMessageTime.bmt_Short, false);
+                                    success = 0;
+                                }
+
+                            }
+
+
+                        }
+
+                        if (success == 0)
+                        {
+                            Conexion.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_Commit);
+                            Conexion.SBOApplication.SetStatusBarMessage("Registros procesados correctamente.", BoMessageTime.bmt_Short, false);
+                            //btnX.Caption = "Ok";
+                        }
+                        else
+                        {
+                            Conexion.SBOApplication.SetStatusBarMessage("No se procesaron registros.", BoMessageTime.bmt_Short, true);
                         }
 
 
