@@ -113,7 +113,8 @@ namespace Mercadeo
                                 catch { }
                             }
 
-                            Conexion.SBOApplication.MessageBox("Se han importado " + Texportar.Rows.Count + " registros desde el archivo Excel.");
+                            
+                            Conexion.SBOApplication.SetStatusBarMessage("Se han importado " + Texportar.Rows.Count + " registros desde el archivo Excel.", BoMessageTime.bmt_Short, false);
 
                             if (Texportar.Rows.Count > 0)
                             {
@@ -165,6 +166,15 @@ namespace Mercadeo
                     }
                 }
             }
+
+
+            if (FormUID == "Mercadeo" && pVal.EventType == SAPbouiCOM.BoEventTypes.et_CLICK && pVal.ItemUID == "btn_crear" && pVal.ActionSuccess)
+            {
+
+                Conexion.SBOApplication.MessageBox("Se ha presionado el botón 'Crear'. Aquí se implementaría la lógica para procesar los datos importados.");
+            }
+
+
         }
 
         // Método auxiliar para garantizar que SAP acepte la fecha sin causar errores RPC
@@ -261,6 +271,50 @@ namespace Mercadeo
 
             oForms = Conexion.SBOApplication.Forms.AddEx(oCreationParams);
             oForms.Visible = true;
+
+            // Cargar valores en el ComboBox de forma segura
+
+            SAPbouiCOM.Item oCombo = oForms.Items.Item("lst_price");
+            SAPbouiCOM.ComboBox oComboBox = (SAPbouiCOM.ComboBox)oCombo.Specific;
+
+            if (oComboBox.ValidValues.Count != 0)
+            {
+                for (int i = 0; i < oComboBox.ValidValues.Count - 1; i++)
+                {
+                    oComboBox.ValidValues.Remove(0, SAPbouiCOM.BoSearchKey.psk_Index);
+                }
+            }
+
+            oComboBox.ValidValues.Add("1", "Precio de lista 1");
+            oComboBox.ValidValues.Add("2", "Precio de lista 2");
+
+            //Habilitar radio buttons
+
+            SAPbouiCOM.Item ChkAplicar = oForms.Items.Item("ddb_agr");
+            SAPbouiCOM.CheckBox ChkAplicarX = (SAPbouiCOM.CheckBox)ChkAplicar.Specific;
+            ChkAplicarX.ValOn = "Y";
+            ChkAplicarX.ValOff = "N";
+            oForms.DataSources.UserDataSources.Add("Aplicar", SAPbouiCOM.BoDataType.dt_SHORT_TEXT, 1);
+            ChkAplicarX.DataBind.SetBound(true, "", "Aplicar");
+            oForms.DataSources.UserDataSources.Item("Aplicar").Value = "N";
+
+            SAPbouiCOM.Item ChkQuitar = oForms.Items.Item("rdb_del");
+            SAPbouiCOM.CheckBox ChkQuitarX = (SAPbouiCOM.CheckBox)ChkQuitar.Specific;
+            ChkQuitarX.ValOn = "Y";
+            ChkQuitarX.ValOff = "N";
+            oForms.DataSources.UserDataSources.Add("Quitar", SAPbouiCOM.BoDataType.dt_SHORT_TEXT, 1);
+            ChkQuitarX.DataBind.SetBound(true, "", "Quitar");
+            oForms.DataSources.UserDataSources.Item("Quitar").Value = "N";
+
+            SAPbouiCOM.Item ChkPrice = oForms.Items.Item("rdb_lp");
+            SAPbouiCOM.CheckBox ChkPriceX = (SAPbouiCOM.CheckBox)ChkPrice.Specific;
+            ChkPriceX.ValOn = "Y";
+            ChkPriceX.ValOff = "N";
+            oForms.DataSources.UserDataSources.Add("Price", SAPbouiCOM.BoDataType.dt_SHORT_TEXT, 1);
+            ChkPriceX.DataBind.SetBound(true, "", "Price");
+            oForms.DataSources.UserDataSources.Item("Price").Value = "N";
+
+
 
             // ============================================================
             // 1. Obtener o crear el DataTable de forma segura
