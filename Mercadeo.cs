@@ -113,7 +113,7 @@ namespace Mercadeo
                                 catch { }
                             }
 
-                            
+
                             Conexion.SBOApplication.SetStatusBarMessage("Se han importado " + Texportar.Rows.Count + " registros desde el archivo Excel.", BoMessageTime.bmt_Short, false);
 
                             if (Texportar.Rows.Count > 0)
@@ -171,7 +171,61 @@ namespace Mercadeo
             if (FormUID == "Mercadeo" && pVal.EventType == SAPbouiCOM.BoEventTypes.et_CLICK && pVal.ItemUID == "btn_crear" && pVal.ActionSuccess)
             {
 
-                Conexion.SBOApplication.MessageBox("Se ha presionado el botón 'Crear'. Aquí se implementaría la lógica para procesar los datos importados.");
+                try
+                {
+                    SAPbouiCOM.Item btn = oForms.Items.Item("btn_crear");
+                    SAPbouiCOM.Button btnCrear = (SAPbouiCOM.Button)btn.Specific;
+
+                    SAPbouiCOM.Item ChkAplicar = oForms.Items.Item("ddb_agr");
+                    SAPbouiCOM.CheckBox cmbAplicar = (SAPbouiCOM.CheckBox)ChkAplicar.Specific;
+
+                    SAPbouiCOM.Item ChkQuitar = oForms.Items.Item("rdb_del");
+                    SAPbouiCOM.CheckBox cmbQuitar = (SAPbouiCOM.CheckBox)ChkQuitar.Specific;
+
+                    SAPbobsCOM.Items Articulos = null;
+
+                    if (btnCrear.Caption == "Crear")
+                    {
+                        //Aplicar *BW
+                        if (cmbAplicar.Checked)
+                        {
+                            for (int i = 0; i < Texportar.Rows.Count; i++)
+                            {
+                                Articulos = Conexion.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oItems);
+
+                                string sql = "SELECT \"ItemName\" FROM OITM Where \"ItemCode\" = '" + Texportar.Rows[i][0]?.ToString() + "'";
+
+                                SAPbobsCOM.Recordset oRecordSet = Conexion.oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
+                                oRecordSet.DoQuery(sql);
+
+                                string itemName = oRecordSet.Fields.Item("ItemName").Value.ToString();
+                                Articulos.GetByKey(Texportar.Rows[i]["ItemCode"]?.ToString() ?? "");
+
+                                itemName = itemName + "*BW";
+                                Articulos.ItemName = itemName;
+
+                                if (Articulos.Update() != 0)
+                                {
+                                    Conexion.SBOApplication.SetStatusBarMessage("Error al actualizar el artículo: " + Conexion.oCompany.GetLastErrorDescription(), BoMessageTime.bmt_Short, true);
+                                    Conexion.oCompany.EndTransaction(SAPbobsCOM.BoWfTransOpt.wf_RollBack);
+                                    return;
+                                }
+                                else
+                                {
+                                    Conexion.SBOApplication.SetStatusBarMessage("Artículo actualizado correctamente: " + Texportar.Rows[i]["ItemCode"]?.ToString() ?? "", BoMessageTime.bmt_Short, false);
+
+
+                                }
+                            }
+                        }
+
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Conexion.SBOApplication.SetStatusBarMessage("Error al crear registros: " + ex.Message, BoMessageTime.bmt_Short, true);
+                }
             }
 
 
