@@ -20,30 +20,4 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
----
-
-Versión legible en español
-
-Esta carpeta y su contenido se publican bajo la Licencia MIT. En resumen,
-esto significa:
-
-- Puedes usar, copiar, modificar y distribuir el código libremente, incluso
-  con fines comerciales.
-- Debes conservar el aviso de copyright y la nota de permiso en todas las
-  copias o partes sustanciales del software.
-- El software se entrega "tal cual" y los autores no ofrecen garantías; no son
-  responsables por daños causados por el uso del software.
-
-Cómo personalizar
-
-- Reemplaza [YEAR] por el año actual (por ejemplo: 2026).
-- Reemplaza [COPYRIGHT HOLDER] por el titular del copyright (tu nombre o
-  el nombre de la organización).
-
-Información adicional
-
-- Repositorio original: https://github.com/enahue/Addon-Mercadeo-b1
-
-Si quieres, puedo actualizar el archivo para poner el año y el titular
-automáticamente (p. ej. usando la configuración de Git) o generar una
-versión en texto plano llamada LICENSE con el mismo contenido.
+Repository: https://github.com/enahue/Addon-Mercadeo-b1
